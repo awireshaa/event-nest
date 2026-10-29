@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event Nest</title>
+<meta name="description" content="Find and post upcoming events in Lagos. Free to list, no tickets or payments.">
+<style>
+  /* Tokens (from the Eventbrite-style design system; font swapped for a system stack) */
+  :root{
+    --bg:#F8F7FA; --bg-2:#EEEDF2; --surface:#FFFFFF; --surface-2:#E6E6E6;
+    --text:#1F2A44; --text-2:#585163; --text-muted:#767585;
+    --accent:#1F2A44; --accent-2:#E8A92B; --gold-text:#8A5C00;
+    --border:#DBDAE3; --border-strong:#A9A8B3;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+    --r-sm:4px; --r-lg:18px; --r-pill:100px;
+    --font:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:var(--font);font-size:16px;line-height:24px;color:var(--text);background:var(--bg)}
+  a{color:inherit}
+  button,input,select,textarea{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid var(--accent-2);outline-offset:2px}
+  .wrap{max-width:1128px;margin:0 auto;padding:0 var(--s4)}
+
+  /* Dark header: the logo's "Event" lettering is white, so it needs a dark background */
+  header{background:var(--text)}
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);height:72px}
+  .logo{display:inline-flex;align-items:center;text-decoration:none}
+  .logo img{display:block;height:60px;width:auto}
+  .btn{display:inline-block;border:1px solid var(--border-strong);background:var(--surface);padding:var(--s2) var(--s4);border-radius:var(--r-sm);font-weight:500;cursor:pointer;text-decoration:none;text-align:center}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-accent{background:var(--accent-2);border-color:var(--accent-2);color:var(--text);font-weight:600}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .hero{background:var(--bg-2);padding:var(--s7) 0 var(--s5)}
+  .hero h1{font-size:30px;line-height:40px;font-weight:600;margin-bottom:var(--s2)}
+  .hero p{color:var(--text-2);margin-bottom:var(--s5)}
+  .search{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:var(--s2);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--s2)}
+  .search input,.search select{border:0;background:transparent;padding:var(--s3);min-width:0;width:100%}
+  .chips{display:flex;gap:var(--s2);overflow-x:auto;padding:var(--s4) 0 var(--s1)}
+  .chip{white-space:nowrap;border:1px solid var(--border-strong);background:var(--surface);padding:var(--s1) var(--s4);border-radius:var(--r-pill);cursor:pointer;font-size:14px}
+  .chip[aria-pressed="true"]{background:var(--text);color:#fff;border-color:var(--text)}
+
+  main{padding:var(--s5) 0 var(--s7)}
+  h2{font-size:24px;line-height:32px;font-weight:600;margin-bottom:var(--s4)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s5) var(--s4);list-style:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;height:100%}
+  .thumb{aspect-ratio:16/9;background:var(--bg-2) center/cover no-repeat}
+  .card-body{padding:var(--s3) var(--s4) var(--s4);display:flex;flex-direction:column;gap:var(--s1);flex:1}
+  .card h3{font-size:16px;line-height:22px;font-weight:600;overflow-wrap:anywhere}
+  .meta{font-size:14px;line-height:20px;color:var(--text-2);overflow-wrap:anywhere}
+  .when{font-size:14px;font-weight:600;color:var(--gold-text)}
+  .tag{align-self:flex-start;font-size:12px;line-height:16px;background:var(--bg-2);padding:var(--s1) var(--s2);border-radius:var(--r-sm);margin-top:var(--s1)}
+  .card .btn{margin-top:auto;font-size:14px}
+  .card-body .spacer{flex:1}
+  .empty{padding:var(--s7) var(--s4);text-align:center;color:var(--text-muted);background:var(--surface);border:1px dashed var(--border-strong);border-radius:var(--r-lg)}
+
+  dialog{border:0;border-radius:var(--r-lg);padding:0;width:min(560px,calc(100% - 24px));max-height:92vh}
+  dialog::backdrop{background:rgba(31,42,68,.6)}
+  .modal{padding:var(--s5)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s4)}
+  .modal-head h2{margin:0}
+  form{display:grid;gap:var(--s3)}
+  label{font-size:14px;font-weight:600;display:grid;gap:var(--s1)}
+  label small{font-weight:400;color:var(--text-muted)}
+  input,select,textarea{border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:var(--s2) var(--s3);background:#fff;width:100%}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+  .err{color:#B3261E;font-size:14px;min-height:20px}
+  footer{background:var(--text);color:#fff;padding:var(--s5) 0;font-size:14px}
+  footer .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s4)}
+  .contact{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;border-radius:50%;color:var(--border-strong);opacity:.7}
+  .contact:hover,.contact:focus-visible{opacity:1;color:#fff}
+  .contact:focus-visible{outline-color:#fff}
+  .contact[hidden]{display:none}
+  .contacts{display:inline-flex;gap:var(--s1)}
+  .contact svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+  @media (max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:760px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .search{grid-template-columns:1fr;border-radius:var(--r-sm)}
+    .hero h1{font-size:24px;line-height:32px}
+  }
+  @media (max-width:480px){
+    .grid{grid-template-columns:1fr}
+    .row{grid-template-columns:1fr}
+    .btn-post-text{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="logo" href="#" aria-label="Event Nest home"><img src="logo.png" alt="Event Nest: Discover Events. Connect People." width="76" height="60"></a>
+    <button class="btn btn-accent" id="openPost" type="button" aria-label="Post an event">+ <span class="btn-post-text">Post an event</span><span aria-hidden="true" class="btn-post-text"></span></button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Find what's happening in Lagos</h1>
+    <p>Browse upcoming events or post your own. Free to list. No tickets, no payments.</p>
+    <form class="search" id="searchForm" role="search" onsubmit="return false">
+      <input id="q" type="search" placeholder="Search events" aria-label="Search events">
+      <select id="area" aria-label="Area"><option value="">All of Lagos</option></select>
+      <select id="when" aria-label="Date">
+        <option value="">Any date</option>
+        <option value="today">Today</option>
+        <option value="week">Next 7 days</option>
+        <option value="month">Next 30 days</option>
+      </select>
+      <button class="btn btn-primary" type="submit" id="go">Search</button>
+    </form>
+    <div class="chips" id="chips" role="group" aria-label="Categories"></div>
+  </div>
+</section>
+
+<main class="wrap">
+  <h2 id="listTitle">Upcoming events</h2>
+  <ul class="grid" id="grid"></ul>
+  <div class="empty" id="empty" hidden>No events match. Try another search, or post the first one.</div>
+</main>
+
+<footer><div class="wrap"><span>Event details are posted by organizers. Contact them directly to attend.</span>
+  <span class="contacts">
+  <a class="contact" id="contactWa" href="#" hidden target="_blank" rel="noopener" aria-label="Chat with the Event Nest team on WhatsApp" title="WhatsApp">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 8.5c.3 2.6 2.9 5.2 5.5 5.5l1.2-1.2-1.8-1-.8.6c-.9-.4-1.8-1.3-2.2-2.2l.6-.8-1-1.8z"/></svg>
+  </a>
+  <a class="contact" id="contact" href="#" hidden aria-label="Email the Event Nest team" title="Contact">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+  </a>
+  </span>
+</div></footer>
+
+<dialog id="postDlg" aria-labelledby="postTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="postTitle">Post an event</h2>
+      <button class="btn" id="closePost" type="button" aria-label="Close">Close</button>
+    </div>
+    <form id="postForm" novalidate>
+      <label>Event name<input name="title" required maxlength="80"></label>
+      <div class="row">
+        <label>Date<input name="date" type="date" required></label>
+        <label>Start time<input name="time" type="time" required></label>
+      </div>
+      <label>Venue<input name="venue" required maxlength="80" placeholder="e.g. Landmark Centre, Victoria Island"></label>
+      <div class="row">
+        <label>Area
+          <select name="area" required></select>
+        </label>
+        <label>Category
+          <select name="cat" required></select>
+        </label>
+      </div>
+      <label>Description<textarea name="desc" rows="3" maxlength="400"></textarea></label>
+      <label>Contact WhatsApp number<small>Interested people will message you here.</small>
+        <input name="wa" type="tel" inputmode="tel" required placeholder="e.g. 08012345678">
+      </label>
+      <label>Your email<small>We email you a confirmation. It is not shown on the site.</small>
+        <input name="email" type="email" inputmode="email" autocomplete="email" required maxlength="120" placeholder="e.g. you@gmail.com">
+      </label>
+      <label>Event flyer or photo<small>Optional. JPG or PNG.</small>
+        <input name="img" type="file" accept="image/*">
+      </label>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn btn-primary" type="submit">Publish event</button>
+    </form>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  var AREAS=["Ikeja","Victoria Island","Lekki","Ikoyi","Yaba","Surulere","Oshodi","Ikorodu","Ajah","Online"];
+  var CATS=["Music","Business","Tech","Faith","Food & Drink","Arts & Culture","Education","Community","Party","Other"];
+  var MINE_KEY="lagoslive.mine.v1"; // tokens for events this browser posted, so the organizer can remove them
+
+  function iso(offset){var d=new Date(Date.now()+3600e3);d.setDate(d.getDate()+offset);return d.toISOString().slice(0,10);}
+  function mine(){try{return JSON.parse(localStorage.getItem(MINE_KEY)||"{}");}catch(e){return {};}}
+  function setMine(m){try{localStorage.setItem(MINE_KEY,JSON.stringify(m));}catch(e){}}
+
+  var events=[], cat="", loaded=false, loadFailed=false;
+  function loadEvents(){
+    return fetch("/api/events").then(function(r){if(!r.ok)throw 0;return r.json();})
+      .then(function(list){events=list;loaded=true;loadFailed=false;render();})
+      .catch(function(){loadFailed=true;loaded=true;render();});
+  }
+
+  var $=function(id){return document.getElementById(id);};
+  function opt(sel,vals){vals.forEach(function(v){var o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});}
+  opt($("area"),AREAS);
+  opt(document.querySelector('#postForm [name=area]'),AREAS);
+  opt(document.querySelector('#postForm [name=cat]'),CATS);
+
+  var chips=$("chips");
+  ["All"].concat(CATS).forEach(function(c){
+    var b=document.createElement("button");b.type="button";b.className="chip";b.textContent=c;
+    b.setAttribute("aria-pressed",c==="All"?"true":"false");
+    b.onclick=function(){cat=c==="All"?"":c;[].forEach.call(chips.children,function(x){x.setAttribute("aria-pressed",x===b?"true":"false");});render();};
+    chips.appendChild(b);
+  });
+
+  function fmt(e){
+    var d=new Date(e.date+"T"+(e.time||"00:00"));
+    if(isNaN(d))return e.date;
+    return d.toLocaleDateString("en-NG",{weekday:"short",month:"short",day:"numeric"})+" · "+d.toLocaleTimeString("en-NG",{hour:"numeric",minute:"2-digit"});
+  }
+  function waLink(n,title){
+    var x=String(n||"").replace(/\D/g,"");
+    if(!x)return "";
+    if(x.charAt(0)==="0")x="234"+x.slice(1);
+    return "https://wa.me/"+x+"?text="+encodeURIComponent("Hi, I'm interested in \""+title+"\".");
+  }
+  function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;}
+
+  function matches(e){
+    var q=$("q").value.trim().toLowerCase(), a=$("area").value, w=$("when").value;
+    if(cat&&e.cat!==cat)return false;
+    if(a&&e.area!==a)return false;
+    if(q&&(e.title+" "+e.venue+" "+e.desc).toLowerCase().indexOf(q)<0)return false;
+    var today=iso(0);
+    if(e.date<today)return false;
+    if(w==="today"&&e.date!==today)return false;
+    if(w==="week"&&e.date>iso(7))return false;
+    if(w==="month"&&e.date>iso(30))return false;
+    return true;
+  }
+
+  function render(){
+    var list=events.filter(matches).sort(function(a,b){return (a.date+a.time)<(b.date+b.time)?-1:1;});
+    var g=$("grid");g.innerHTML="";
+    var em=$("empty");
+    if(!loaded){em.hidden=false;em.textContent="Loading events…";return;}
+    if(loadFailed){em.hidden=false;em.textContent="Couldn't load events. Check your connection and refresh.";return;}
+    em.textContent="No events match. Try another search, or post the first one.";
+    em.hidden=list.length>0;
+    var own=mine();
+    list.forEach(function(e){
+      var li=document.createElement("li");
+      var link=waLink(e.wa,e.title);
+      var safeImg=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(e.img||"")?e.img:"";
+      var thumbStyle=safeImg?' style="background-image:url('+safeImg+')"':"";
+      li.innerHTML='<article class="card"><div class="thumb"'+thumbStyle+' role="img" aria-label="'+esc(e.title)+' image"></div>'+
+        '<div class="card-body"><span class="when">'+esc(fmt(e))+'</span><h3>'+esc(e.title)+'</h3>'+
+        '<span class="meta">'+esc(e.venue)+' · '+esc(e.area)+'</span>'+
+        '<span class="tag">'+esc(e.cat)+'</span><span class="spacer"></span>'+
+        (link?'<a class="btn" target="_blank" rel="noopener" href="'+link+'">I\'m interested</a>':'')+
+        (own[e.id]?'<button class="btn btn-remove" type="button" data-id="'+esc(e.id)+'">Remove my event</button>':'')+
+        '</div></article>';
+      g.appendChild(li);
+    });
+  }
+
+  $("grid").addEventListener("click",function(ev){
+    var b=ev.target.closest(".btn-remove");if(!b)return;
+    if(!confirm("Remove this event from the site?"))return;
+    var id=b.getAttribute("data-id"),m=mine();
+    b.disabled=true;
+    fetch("/api/events/"+encodeURIComponent(id),{method:"DELETE",headers:{"x-token":m[id]||""}})
+      .then(function(r){if(!r.ok)throw 0;delete m[id];setMine(m);return loadEvents();})
+      .catch(function(){b.disabled=false;alert("Couldn't remove it. Try again.");});
+  });
+
+  ["q","area","when"].forEach(function(id){$(id).addEventListener("input",render);});
+  $("searchForm").addEventListener("submit",render);
+
+  var dlg=$("postDlg");
+  $("openPost").onclick=function(){$("err").textContent="";dlg.showModal();};
+  $("closePost").onclick=function(){dlg.close();};
+
+  // Shrink uploaded flyers so they fit in browser storage
+  function shrink(file,cb){
+    var r=new FileReader();
+    r.onload=function(){
+      var im=new Image();
+      im.onload=function(){
+        var max=900,s=Math.min(1,max/Math.max(im.width,im.height));
+        var c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+        c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+        cb(c.toDataURL("image/jpeg",.78));
+      };
+      im.onerror=function(){cb("");};
+      im.src=r.result;
+    };
+    r.onerror=function(){cb("");};
+    r.readAsDataURL(file);
+  }
+
+  $("postForm").addEventListener("submit",function(ev){
+    ev.preventDefault();
+    var f=ev.target,v=function(n){return f.elements[n].value.trim();};
+    var err=$("err");err.textContent="";
+    if(!v("title")||!v("date")||!v("time")||!v("venue")||!v("wa")||!v("email")){err.textContent="Please fill in the name, date, time, venue, WhatsApp number and email.";return;}
+    if(v("date")<iso(0)){err.textContent="The date can't be in the past.";return;}
+    if(v("wa").replace(/\D/g,"").length<10){err.textContent="Enter a valid WhatsApp number.";return;}
+    var btn=f.querySelector('button[type=submit]');
+    if(!/^[^\s@<>",;]+@[^\s@<>",;]+\.[^\s@<>",;]{2,}$/.test(v("email"))){err.textContent="Enter a valid email address.";return;}
+    function finish(img){
+      var e={title:v("title"),date:v("date"),time:v("time"),venue:v("venue"),area:f.elements.area.value,cat:f.elements.cat.value,desc:v("desc"),wa:v("wa"),email:v("email"),img:img||""};
+      btn.disabled=true;btn.textContent="Publishing…";
+      fetch("/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(e)})
+        .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+        .then(function(res){
+          if(!res.ok){err.textContent=(res.j&&res.j.error)||"Couldn't publish. Try again.";return;}
+          var m=mine();m[res.j.id]=res.j.token;setMine(m);
+          f.reset();dlg.close();return loadEvents();
+        })
+        .catch(function(){err.textContent="Couldn't reach the server. Check your connection.";})
+        .then(function(){btn.disabled=false;btn.textContent="Publish event";});
+    }
+    var file=f.elements.img.files[0];
+    file?shrink(file,finish):finish("");
+  });
+
+  render();
+  loadEvents();
+
+  // Contact icon only shows once the site owner has set CONTACT_EMAIL on the server.
+  fetch("/api/config").then(function(r){return r.json();}).then(function(c){
+    if(c&&/^\d{10,15}$/.test(c.contactWhatsapp||"")){
+      var w=$("contactWa");w.href="https://wa.me/"+c.contactWhatsapp+"?text="+encodeURIComponent("Hi Event Nest, ");w.hidden=false;
+    }
+    if(c&&/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(c.contactEmail||"")){
+      var a=$("contact");a.href="mailto:"+c.contactEmail+"?subject="+encodeURIComponent("Event Nest enquiry");a.hidden=false;
+    }
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

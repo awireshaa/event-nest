@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Event Nest admin</title>
+<style>
+  :root{--bg:#F8F7FA;--bg-2:#EEEDF2;--surface:#fff;--text:#1F2A44;--text-2:#585163;--muted:#767585;--gold:#E8A92B;--gold-text:#8A5C00;--border:#DBDAE3;--border-strong:#A9A8B3;--danger:#B3261E}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;font-size:16px;line-height:24px;color:var(--text);background:var(--bg)}
+  :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  button,input,select{font:inherit;color:inherit}
+  .wrap{max-width:1128px;margin:0 auto;padding:0 16px}
+  header{background:var(--text)}
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px}
+  .bar img{height:48px;width:auto;display:block}
+  .bar span{color:#fff;font-weight:600}
+  .btn{display:inline-block;border:1px solid var(--border-strong);background:var(--surface);padding:8px 16px;border-radius:4px;font-weight:500;cursor:pointer;text-decoration:none;text-align:center;font-size:14px}
+  .btn-primary{background:var(--text);border-color:var(--text);color:#fff}
+  .btn-gold{background:var(--gold);border-color:var(--gold);color:var(--text);font-weight:600}
+  .btn-danger{color:var(--danger);border-color:var(--danger)}
+  input[type=checkbox]{width:18px;height:18px;padding:0}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  main{padding:24px 0 48px}
+  h1{font-size:24px;line-height:32px;margin-bottom:16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px}
+  .login{max-width:380px;margin:48px auto 0}
+  label{display:grid;gap:4px;font-size:14px;font-weight:600;margin-bottom:12px}
+  input,select{border:1px solid var(--border-strong);border-radius:4px;padding:8px 12px;background:#fff;width:100%}
+  .err{color:var(--danger);font-size:14px;min-height:20px;margin-bottom:8px}
+  .tools{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:12px}
+  .tools label{margin:0;min-width:150px}
+  .tools .grow{flex:1}
+  .hint{font-size:14px;color:var(--text-2);margin-bottom:16px}
+  .count{font-weight:600;margin:8px 0 12px}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:14px;line-height:20px}
+  th{text-align:left;background:var(--bg-2);padding:8px 12px;font-weight:600;white-space:nowrap}
+  td{padding:10px 12px;border-top:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+  td.nw{white-space:nowrap}
+  .when{font-weight:600;color:var(--gold-text);white-space:nowrap}
+  td a{color:var(--text)}
+  .empty{padding:32px 16px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--border-strong);border-radius:18px}
+  [hidden]{display:none!important}
+  @media (max-width:760px){
+    table,thead,tbody,tr,td{display:block}
+    thead{display:none}
+    tr{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;padding:8px 0}
+    td{border:0;padding:4px 12px}
+    td[data-label]::before{content:attr(data-label) ": ";color:var(--muted)}
+    table{border:0;background:transparent}
+  }
+</style>
+</head>
+<body>
+<header><div class="wrap bar"><img src="/logo.png" alt="Event Nest"><span id="who" hidden>Admin</span><button class="btn" id="logout" hidden type="button">Log out</button></div></header>
+<main class="wrap">
+  <section id="loginBox" class="card login">
+    <h1>Admin login</h1>
+    <form id="loginForm">
+      <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
+      <p class="err" id="loginErr" role="alert"></p>
+      <button class="btn btn-primary" type="submit" id="loginBtn" style="width:100%">Log in</button>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <h1>Events</h1>
+    <div class="tools">
+      <label>Year<select id="year"></select></label>
+      <label>Month<select id="month"></select></label>
+      <span class="grow"></span>
+      <button class="btn btn-danger" id="delSel" type="button" hidden></button>
+      <a class="btn btn-gold" id="dl" href="#">Download for Google Sheets</a>
+    </div>
+    <p class="hint">Events are grouped by the date they take place. To use the download in Google Sheets choose File, Import, Upload, and pick the file. Tick events to delete several at once, or leave them to keep them.</p>
+    <p class="count" id="count" aria-live="polite"></p>
+    <div id="list"></div>
+  </section>
+</main>
+<script src="/admin/app.js"></script>
+</body>
+</html>
